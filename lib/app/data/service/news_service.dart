@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 
 class NewsService extends GetConnect {
@@ -10,24 +9,17 @@ class NewsService extends GetConnect {
   void onInit() {
     super.onInit();
 
-    baseUrl = dotenv.env['BASE_URL'] ?? 'https://newsapi.org/v2';
-    apiKey = dotenv.env['API_KEY'] ?? '';
-    proxy = dotenv.env['PROXY_URL'] ?? '';
+    baseUrl = 'https://newsapi.org/v2';
+    apiKey = '523de6cb9152435abc4162d48970e351';
+    proxy = 'https://api.allorigins.win/raw?url=';
 
-    // 🔥 Pastikan httpClient dikonfigurasi dengan benar
-    // httpClient.baseUrl = baseUrl; // ❌ JANGAN SET BASEURL DISINI, NANTI DOUBLE
     httpClient.timeout = const Duration(seconds: 20);
 
-    // ⚠️ NewsAPI SANGAT STRICT soal User-Agent
     httpClient.addRequestModifier<dynamic>((request) {
       request.headers['Authorization'] = apiKey;
-      request.headers['User-Agent'] = 'NewsApp/1.0.0'; // 🔥 WAJIB ADA
-      print('REQUEST: ${request.url}');
+      request.headers['User-Agent'] = 'NewsApp/1.0.0';
       return request;
     });
-
-    assert(baseUrl != null && baseUrl!.isNotEmpty, 'BASE_URL kosong');
-    assert(apiKey.isNotEmpty, 'API_KEY kosong');
   }
 
   /// 🔥 PALING STABIL (DEFAULT WEB)
@@ -67,15 +59,18 @@ class NewsService extends GetConnect {
   }
 
   /// 🔐 Helper aman Web / Mobile
-  Future<Response> _get(String url) {
-    if (kIsWeb && proxy.isNotEmpty) {
-      // ... proxy logic, jika user pakai web
-      final fullUrl = '$baseUrl$url';
-      final proxied = '$proxy${Uri.encodeComponent(fullUrl)}';
-      return get(proxied);
-    }
+  Future<Response> _get(String url) async {
+    try {
+      if (kIsWeb && proxy.isNotEmpty) {
+        final fullUrl = '$baseUrl$url';
+        final proxied = '$proxy${Uri.encodeComponent(fullUrl)}';
+        return await get(proxied);
+      }
 
-    // ⚠️ PERBAIKAN: Gunakan relative URL karena baseUrl sudah diset secara global di onInit
-    return get(url);
+      return await get(url);
+    } catch (e) {
+      print('ERROR API: $e');
+      rethrow;
+    }
   }
 }
